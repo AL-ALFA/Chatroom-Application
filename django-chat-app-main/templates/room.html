@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{room}} - CONVO Chat</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('path_to_your_image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 2em;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        #display {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .message-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 5px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 10px;
+            word-wrap: break-word;
+            max-width: 80%;
+            position: relative;
+        }
+
+        .message.other {
+            background-color: #e3f2fd;
+            align-self: flex-start;
+            border: 1px solid #b3e5fc;
+        }
+
+        .message.self {
+            background-color: #a5d6a7;
+            align-self: flex-end;
+            border: 1px solid #4CAF50;
+        }
+
+        .message span {
+            display: block;
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .form-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .input-container {
+            display: flex;
+            width: 100%;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            font-size: 1.1em;
+            background-color: #f9f9f9;
+            outline: none;
+            box-sizing: border-box;
+            transition: 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4CAF50;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+
+        input[type="submit"] {
+            width: 50px;
+            height: 50px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+            transform: scale(1.1);
+        }
+
+        input[type="submit"]:active {
+            transform: scale(0.95);
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 20px;
+        }
+
+        footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            h2 {
+                font-size: 1.8em;
+            }
+
+            input[type="text"] {
+                padding: 10px;
+                font-size: 1em;
+            }
+
+            input[type="submit"] {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>{{room}} - CONVO Chat</h2>
+
+    <div id="display">
+        <div class="message-container" id="message-container">
+            <!-- Messages will be dynamically added here -->
+        </div>
+    </div>
+
+    <div class="form-container">
+        <form id="post-form" style="width: 100%; display: flex; gap: 10px;">
+            {% csrf_token %}
+            <input type="hidden" name="username" id="username" value="{{username}}" />
+            <input type="hidden" name="room_id" id="room_id" value="{{room_details.id}}" />
+            <div class="input-container">
+                <input type="text" name="message" id="message" placeholder="Type your message..." />
+                <input type="submit" value="➤">
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function () {
+        const display = $('#display');
+        const messageContainer = $('#message-container');
+
+        function scrollToBottom() {
+            display.scrollTop(display[0].scrollHeight);
+        }
+
+        setInterval(function () {
+            $.ajax({
+                type: 'GET',
+                url: "/getMessages/{{room}}/",
+                success: function (response) {
+                    messageContainer.empty();
+                    response.messages.forEach(msg => {
+                        const isSelf = msg.user === "{{username}}";
+                        const messageHTML = `
+                            <div class="message ${isSelf ? 'self' : 'other'}">
+                                <b>${msg.user}</b><br>
+                                ${msg.value}
+                                <span>${msg.date}</span>
+                            </div>`;
+                        messageContainer.append(messageHTML);
+                    });
+                    scrollToBottom();
+                },
+                error: function () {
+                    alert('An error occurred while fetching messages.');
+                }
+            });
+        }, 1000);
+
+        $('#post-form').submit(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: 'POST',
+                url: '/send',
+                data: {
+                    username: $('#username').val(),
+                    room_id: $('#room_id').val(),
+                    message: $('#message').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function () {
+                    $('#message').val('');
+                },
+                error: function () {
+                    alert('An error occurred while sending the message.');
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
